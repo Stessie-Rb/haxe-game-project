@@ -7,6 +7,8 @@ import flixel.addons.editors.ogmo.FlxOgmo3Loader;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.tile.FlxTilemap;
 
+using flixel.util.FlxSpriteUtil;
+
 class PlayState extends FlxState
 {
 	var player:Player;
@@ -17,6 +19,8 @@ class PlayState extends FlxState
 	var hud:HUD;
 	var money:Int = 0;
 	var health:Int = 3;
+	var inCombat:Bool = false;
+	var combatHUD:CombatHUD;
 
 	override public function create():Void
 	{
@@ -36,16 +40,41 @@ class PlayState extends FlxState
 		add(enemies);
 		add(player);
 		add(hud);
+		combatHUD = new CombatHUD();
+		add(combatHUD);
 		super.create();
 	}
 
 	override public function update(elapsed:Float)
 	{
 		super.update(elapsed);
-		FlxG.collide(player, walls);
-		FlxG.overlap(player, coins, playerTouchCoin);
-		FlxG.collide(enemies, walls);
-		enemies.forEachAlive(checkEnemyVision);
+		if (inCombat)
+		{
+			if (!combatHUD.visible)
+			{
+				health = combatHUD.playerHealth;
+				hud.updateHUD(health, money);
+				if (combatHUD.outcome == VICTORY)
+				{
+					combatHUD.enemy.kill();
+				}
+				else
+				{
+					combatHUD.enemy.flicker();
+				}
+				inCombat = false;
+				player.active = true;
+				enemies.active = true;
+			}
+		}
+		else
+		{
+			FlxG.collide(player, walls);
+			FlxG.overlap(player, coins, playerTouchCoin);
+			FlxG.collide(enemies, walls);
+			enemies.forEachAlive(checkEnemyVision);
+			FlxG.overlap(player, enemies, playerTouchEnemy);
+		}
 	}
 
 	function placeEntities(entity:EntityData)
@@ -90,5 +119,21 @@ class PlayState extends FlxState
 		{
 			enemy.seesPlayer = false;
 		}
+	}
+
+	function playerTouchEnemy(player:Player, enemy:Enemy)
+	{
+		if (player.alive && player.exists && enemy.alive && enemy.exists && !enemy.isFlickering())
+		{
+			startCombat(enemy);
+		}
+	}
+
+	function startCombat(enemy:Enemy)
+	{
+		inCombat = true;
+		player.active = false;
+		enemies.active = false;
+		combatHUD.initCombat(health, enemy);
 	}
 }

@@ -6,6 +6,8 @@ import flixel.FlxSprite;
 import flixel.math.FlxPoint;
 import flixel.math.FlxVelocity;
 
+using flixel.util.FlxSpriteUtil;
+
 enum EnemyType
 {
 	REGULAR;
@@ -16,11 +18,11 @@ class Enemy extends FlxSprite
 {
 	static inline var SPEED:Float = 140;
 
-	var type:EnemyType;
 	var brain:FSM;
 	var idleTimer:Float;
 	var moveDirection:Float;
 
+	public var type:EnemyType;
 	public var seesPlayer:Bool;
 	public var playerPosition:FlxPoint;
 
@@ -48,6 +50,8 @@ class Enemy extends FlxSprite
 
 	override public function update(elapsed:Float)
 	{
+		if (this.isFlickering())
+			return;
 		if ((velocity.x != 0 || velocity.y != 0) && touching == FlxObject.NONE)
 		{
 			if (Math.abs(velocity.x) > Math.abs(velocity.y))
@@ -116,6 +120,16 @@ class Enemy extends FlxSprite
 		else
 		{
 			FlxVelocity.moveTowardsPoint(this, playerPosition, Std.int(SPEED));
+		}
+	}
+
+	public function changeType(type:EnemyType)
+	{
+		if (this.type != type)
+		{
+			this.type = type;
+			var graphic = if (type == BOSS) AssetPaths.boss__png else AssetPaths.enemy__png;
+			loadGraphic(graphic, true, 49, 49);
 		}
 	}
 }
