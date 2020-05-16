@@ -5,7 +5,9 @@ import flixel.FlxObject;
 import flixel.FlxState;
 import flixel.addons.editors.ogmo.FlxOgmo3Loader;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import flixel.system.FlxSound;
 import flixel.tile.FlxTilemap;
+import flixel.util.FlxColor;
 
 using flixel.util.FlxSpriteUtil;
 
@@ -21,6 +23,13 @@ class PlayState extends FlxState
 	var health:Int = 3;
 	var inCombat:Bool = false;
 	var combatHUD:CombatHUD;
+	var ending:Bool;
+	var won:Bool;
+	var coinSound:FlxSound;
+
+	#if mobile
+	public static var virtualPad:FlxVirtualPad;
+	#end
 
 	override public function create():Void
 	{
@@ -42,26 +51,56 @@ class PlayState extends FlxState
 		add(hud);
 		combatHUD = new CombatHUD();
 		add(combatHUD);
+		coinSound = FlxG.sound.load(AssetPaths.coin__wav);
+
+		#if mobile
+		virtualPad = new FlxVirtualPad(FULL, NONE);
+		add(virtualPad);
+		#end
+
 		super.create();
 	}
 
 	override public function update(elapsed:Float)
 	{
 		super.update(elapsed);
+		if (ending)
+		{
+			return;
+		}
 		if (inCombat)
 		{
 			if (!combatHUD.visible)
 			{
 				health = combatHUD.playerHealth;
 				hud.updateHUD(health, money);
-				if (combatHUD.outcome == VICTORY)
+				if (combatHUD.outcome == DEFEAT)
 				{
-					combatHUD.enemy.kill();
+					ending = true;
+					FlxG.camera.fade(FlxColor.BLACK, 0.33, false, doneFadeOut);
 				}
 				else
 				{
-					combatHUD.enemy.flicker();
+					if (combatHUD.outcome == VICTORY)
+					{
+						combatHUD.enemy.kill();
+						if (combatHUD.enemy.type == BOSS)
+						{
+							won = true;
+							ending = true;
+							FlxG.camera.fade(FlxColor.BLACK, 0.33, false, doneFadeOut);
+						}
+					}
+					else
+					{
+						combatHUD.enemy.flicker();
+					}
 				}
+
+				#if mobile
+				virtualPad.visible = false;
+				#end
+
 				inCombat = false;
 				player.active = true;
 				enemies.active = true;
@@ -105,6 +144,7 @@ class PlayState extends FlxState
 			coin.kill();
 			money++;
 			hud.updateHUD(health, money);
+			coinSound.play(true);
 		}
 	}
 
@@ -131,9 +171,17 @@ class PlayState extends FlxState
 
 	function startCombat(enemy:Enemy)
 	{
+		#if mobile
+		virtualPad.visible = false;
+		#end
 		inCombat = true;
 		player.active = false;
 		enemies.active = false;
 		combatHUD.initCombat(health, enemy);
+	}
+
+	function doneFadeOut()
+	{
+		FlxG.switchState(new GameOverState(won, money));
 	}
 }

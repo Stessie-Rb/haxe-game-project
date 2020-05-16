@@ -32,11 +32,11 @@ class ApplicationMain
 
 		ManifestResources.init(config);
 
-		app.meta["build"] = "1";
+		app.meta["build"] = "2";
 		app.meta["company"] = "HaxeFlixel";
 		app.meta["file"] = "HelloUnicorn";
 		app.meta["name"] = "HelloUnicorn";
-		app.meta["packageName"] = "com.example.myapp";
+		app.meta["packageName"] = "com.haxeflixel.HelloUnicorn";
 		app.meta["version"] = "0.0.1";
 
 		
